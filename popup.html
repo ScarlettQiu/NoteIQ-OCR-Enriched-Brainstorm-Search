@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteIQ - OCR Assistant</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 NoteIQ</h1>
+            <p>OCR & AI Brainstorm Assistant</p>
+        </header>
+        
+        <main>
+            <div class="upload-section">
+                <label for="image-upload" class="upload-btn">
+                    📸 Upload Image
+                    <input type="file" id="image-upload" accept="image/*" hidden>
+                </label>
+                <div id="image-preview" class="image-preview"></div>
+            </div>
+            
+            <div class="processing-section" id="processing-section" style="display: none;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing with AI...</p>
+                </div>
+            </div>
+            
+            <div class="results-section" id="results-section" style="display: none;">
+                <div class="result-card">
+                    <h3>📝 Extracted Text</h3>
+                    <div id="extracted-text" class="text-content"></div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>🧠 AI Insights</h3>
+                    <div id="ai-insights" class="text-content"></div>
+                </div>
+            </div>
+            
+            <div class="error-section" id="error-section" style="display: none;">
+                <div class="error-message">
+                    <p>❌ Error: <span id="error-text"></span></p>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Powered by Google Vision API & Gemini AI</p>
+        </footer>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

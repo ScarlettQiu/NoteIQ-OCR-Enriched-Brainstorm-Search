@@ -92,16 +92,62 @@ python test_ocr.py your_image.jpg
 python convert_image.py your_image.jpg
 ```
 
+### Test with Jupyter Notebook:
+```bash
+jupyter notebook test_notebook.ipynb
+```
+
+## Chrome Extension Setup
+
+### Prerequisites
+1. **Start the Flask API**:
+```bash
+python app_simple.py &
+```
+
+2. **Install Extension in Chrome**:
+   - Open Chrome and go to `chrome://extensions/`
+   - Enable "Developer mode" (top right toggle)
+   - Click "Load unpacked"
+   - Select this project folder
+   - The NoteIQ extension should appear in your extensions
+
+### Extension Features
+- **Popup Interface**: Click the extension icon to open the OCR interface
+- **Image Upload**: Drag & drop or click to upload images
+- **Real-time Processing**: Uses your Flask API for OCR and AI enrichment
+- **Content Script**: Can extract text from web pages and process images
+
+### Extension Usage
+1. Click the NoteIQ icon in your Chrome toolbar
+2. Upload an image of handwritten notes
+3. View extracted text and AI insights
+4. Copy results to clipboard
+
+**Note**: Make sure your Flask API is running on `http://localhost:5003` for the extension to work.
+
 ## Project Structure
 
 ```
 ├── app.py                 # Main Flask application
+├── app_simple.py         # Simplified Flask app with real API integration
 ├── test_ocr.py           # OCR testing script
 ├── convert_image.py      # Image to base64 converter
+├── test_notebook.ipynb   # Jupyter notebook for testing
 ├── requirements.txt      # Python dependencies
 ├── .env                  # Environment variables (not in repo)
 ├── .gitignore           # Git ignore rules
-└── README.md            # This file
+├── LICENSE               # MIT License
+├── README.md            # This file
+│
+├── Chrome Extension Files:
+├── manifest.json         # Extension configuration
+├── popup.html           # Extension popup UI
+├── popup.css            # Popup styling
+├── popup.js             # Popup functionality
+├── background.js        # Background service worker
+├── content.js           # Content script for web pages
+└── icons/               # Extension icons (16, 32, 48, 128px)
 ```
 
 ## Technologies Used
