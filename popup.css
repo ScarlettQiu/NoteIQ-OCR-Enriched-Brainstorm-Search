@@ -64,6 +64,29 @@ main {
     box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
 }
 
+.file-info {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-info small {
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+}
+
+.file-info small:first-child {
+    color: #059669;
+    font-weight: 500;
+}
+
+.file-info small:last-child {
+    color: #dc2626;
+    font-weight: 500;
+}
+
 .image-preview {
     margin-top: 15px;
 }
@@ -114,14 +137,54 @@ main {
     padding: 15px;
 }
 
-.result-card h3 {
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.result-header h3 {
     color: #374151;
     font-size: 16px;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.copy-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.copy-btn:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.copy-btn:active {
+    transform: translateY(0);
+}
+
+.copy-btn.copied {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.copy-btn.copied::after {
+    content: " ✓";
 }
 
 .text-content {

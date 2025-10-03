@@ -26,7 +26,7 @@ def test_ocr(image_path):
         
         # Send POST request to OCR endpoint
         print("Sending request to OCR endpoint...")
-        url = 'http://localhost:5003/ocr'
+        url = 'http://localhost:5001/ocr'
         data = {'image_base64': img_base64}
         
         response = requests.post(url, json=data)

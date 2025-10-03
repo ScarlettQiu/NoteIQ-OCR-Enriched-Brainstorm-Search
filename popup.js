@@ -2,13 +2,17 @@
 
 class NoteIQExtension {
     constructor() {
-        this.apiUrl = 'http://localhost:5003'; // Your Flask API URL
+        this.apiUrl = 'http://localhost:5001'; // Your Flask API URL
         this.initializeEventListeners();
     }
 
     initializeEventListeners() {
         const imageUpload = document.getElementById('image-upload');
         imageUpload.addEventListener('change', (e) => this.handleImageUpload(e));
+        
+        // Copy button event listeners
+        document.getElementById('copy-text-btn').addEventListener('click', () => this.copyText());
+        document.getElementById('copy-insights-btn').addEventListener('click', () => this.copyInsights());
     }
 
     async handleImageUpload(event) {
@@ -62,7 +66,7 @@ class NoteIQExtension {
             }
 
             // Step 2: AI Enrichment
-            const enrichmentResult = await this.performEnrichment(ocrResult.extracted_text);
+            const enrichmentResult = await this.performEnrichment(ocrResult.extracted_text, ocrResult.visual_analysis);
 
             // Show results
             this.showResults(ocrResult.extracted_text, enrichmentResult.enriched_output);
@@ -90,14 +94,15 @@ class NoteIQExtension {
         return await response.json();
     }
 
-    async performEnrichment(text) {
+    async performEnrichment(text, visualAnalysis) {
         const response = await fetch(`${this.apiUrl}/enrich`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                text: text
+                text: text,
+                visual_analysis: visualAnalysis
             })
         });
 
@@ -129,6 +134,45 @@ class NoteIQExtension {
         document.getElementById('error-section').style.display = 'block';
 
         document.getElementById('error-text').textContent = message;
+    }
+
+    async copyText() {
+        const text = document.getElementById('extracted-text').textContent;
+        await this.copyToClipboard(text, 'copy-text-btn');
+    }
+
+    async copyInsights() {
+        const insights = document.getElementById('ai-insights').textContent;
+        await this.copyToClipboard(insights, 'copy-insights-btn');
+    }
+
+    async copyToClipboard(text, buttonId) {
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showCopySuccess(buttonId);
+        } catch (err) {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showCopySuccess(buttonId);
+        }
+    }
+
+    showCopySuccess(buttonId) {
+        const button = document.getElementById(buttonId);
+        const originalText = button.textContent;
+        
+        button.classList.add('copied');
+        button.textContent = '✓ Copied!';
+        
+        setTimeout(() => {
+            button.classList.remove('copied');
+            button.textContent = originalText;
+        }, 2000);
     }
 }
 

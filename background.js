@@ -35,7 +35,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Process image through your Flask API
 async function processImageRequest(imageData) {
     try {
-        const response = await fetch('http://localhost:5003/ocr', {
+        const response = await fetch('http://localhost:5001/ocr', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

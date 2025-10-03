@@ -124,7 +124,7 @@ python app_simple.py &
 3. View extracted text and AI insights
 4. Copy results to clipboard
 
-**Note**: Make sure your Flask API is running on `http://localhost:5003` for the extension to work.
+**Note**: Make sure your Flask API is running on `http://localhost:5001` for the extension to work.
 
 ## Project Structure
 
