@@ -6,11 +6,11 @@
   
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "contextMenus"
   ],
   
   "action": {
-    "default_popup": "popup.html",
     "default_title": "NoteIQ OCR Assistant",
     "default_icon": {
       "16": "icons/icon16.png",

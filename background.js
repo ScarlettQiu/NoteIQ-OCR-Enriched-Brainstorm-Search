@@ -13,10 +13,31 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // Handle context menu clicks
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'noteiq-ocr' && info.srcUrl) {
-        // Open popup with image
-        chrome.action.openPopup();
+        // Open normal window with image
+        try {
+            const window = await chrome.windows.create({
+                url: chrome.runtime.getURL('popup.html'),
+                type: 'normal',
+                width: 800,
+                height: 900,
+                left: 100,
+                top: 100,
+                focused: true
+            });
+            console.log('NoteIQ window opened from context menu:', window.id);
+        } catch (error) {
+            console.error('Error opening NoteIQ window from context menu:', error);
+            // Fallback: try to open in new tab
+            try {
+                chrome.tabs.create({
+                    url: chrome.runtime.getURL('popup.html')
+                });
+            } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+            }
+        }
     }
 });
 
@@ -56,8 +77,37 @@ async function processImageRequest(imageData) {
     }
 }
 
-// Handle extension icon click
-chrome.action.onClicked.addListener((tab) => {
-    // This is handled by the popup, but we can add additional logic here
-    console.log('Extension icon clicked');
+// Handle extension icon click - open normal window
+chrome.action.onClicked.addListener(async (tab) => {
+    console.log('Extension icon clicked - opening NoteIQ window');
+    console.log('Extension URL:', chrome.runtime.getURL('popup.html'));
+    
+    try {
+        // Create a normal Chrome window
+        const window = await chrome.windows.create({
+            url: chrome.runtime.getURL('popup.html'),
+            type: 'normal',
+            width: 800,
+            height: 900,
+            left: 100,
+            top: 100,
+            focused: true
+        });
+        
+        console.log('NoteIQ window opened successfully:', window.id);
+        
+    } catch (error) {
+        console.error('Error opening NoteIQ window:', error);
+        
+        // Fallback: open in new tab
+        try {
+            const newTab = await chrome.tabs.create({
+                url: chrome.runtime.getURL('popup.html'),
+                active: true
+            });
+            console.log('Fallback: opened in new tab:', newTab.id);
+        } catch (fallbackError) {
+            console.error('All methods failed:', fallbackError);
+        }
+    }
 });

@@ -24,119 +24,11 @@ vision_client = vision.ImageAnnotatorClient()
 
 # Set up Gemini client
 genai.configure(api_key=api_key)
-gemini_model = genai.GenerativeModel("gemini-pro")
+gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 
 # Flask app
 app = Flask(__name__)
 
-def search_relevant_articles(keywords, categories, max_articles=3):
-    """
-    Search for relevant articles based on keywords and categories using web search
-    """
-    try:
-        # Create more targeted search query combining categories and keywords
-        if categories:
-            # Use category + top keywords for more relevant results
-            search_query = f"{categories[0]} {' '.join(keywords[:2])}"
-        else:
-            # Fallback to just keywords
-            search_query = " ".join(keywords[:3])
-        
-        print(f"Searching for: {search_query}")  # Debug output
-        
-        # Use DuckDuckGo Instant Answer API for search (free, no API key needed)
-        search_url = "https://api.duckduckgo.com/"
-        params = {
-            'q': search_query,
-            'format': 'json',
-            'no_html': '1',
-            'skip_disambig': '1'
-        }
-        
-        response = requests.get(search_url, params=params, timeout=10)
-        data = response.json()
-        
-        print(f"DuckDuckGo response keys: {list(data.keys())}")  # Debug output
-        
-        articles = []
-        
-        # Extract related topics and abstracts
-        if 'RelatedTopics' in data and data['RelatedTopics']:
-            print(f"Found {len(data['RelatedTopics'])} related topics")  # Debug output
-            for topic in data['RelatedTopics'][:max_articles]:
-                if 'Text' in topic and 'FirstURL' in topic:
-                    articles.append({
-                        'title': topic['Text'][:100] + '...' if len(topic['Text']) > 100 else topic['Text'],
-                        'url': topic['FirstURL'],
-                        'source': 'DuckDuckGo'
-                    })
-        
-        # If no related topics, try to get abstract from main result
-        if not articles and 'Abstract' in data and data['Abstract']:
-            print("Using abstract as fallback")  # Debug output
-            articles.append({
-                'title': data['Abstract'][:100] + '...' if len(data['Abstract']) > 100 else data['Abstract'],
-                'url': data.get('AbstractURL', ''),
-                'source': 'DuckDuckGo'
-            })
-        
-        # If still no articles, create some generic helpful links based on categories
-        if not articles:
-            print("No articles found, creating generic recommendations")  # Debug output
-            articles = create_generic_recommendations(categories, keywords)
-        
-        print(f"Returning {len(articles)} articles")  # Debug output
-        return articles[:max_articles]
-        
-    except Exception as e:
-        print(f"Article search error: {str(e)}")
-        # Return generic recommendations as fallback
-        return create_generic_recommendations(categories, keywords)
-
-def create_generic_recommendations(categories, keywords):
-    """
-    Create generic helpful recommendations when web search fails
-    """
-    recommendations = []
-    
-    # Category-based recommendations
-    if categories:
-        for category in categories[:2]:  # Take first 2 categories
-            if 'Problem' in category:
-                recommendations.append({
-                    'title': 'Problem-Solving Methodologies and Best Practices',
-                    'url': 'https://en.wikipedia.org/wiki/Problem_solving',
-                    'source': 'Wikipedia'
-                })
-            elif 'Solution' in category:
-                recommendations.append({
-                    'title': 'Solution Development Frameworks and Strategies',
-                    'url': 'https://en.wikipedia.org/wiki/Systems_thinking',
-                    'source': 'Wikipedia'
-                })
-            elif 'Action' in category:
-                recommendations.append({
-                    'title': 'Action Planning and Implementation Techniques',
-                    'url': 'https://en.wikipedia.org/wiki/Project_management',
-                    'source': 'Wikipedia'
-                })
-            elif 'Goal' in category:
-                recommendations.append({
-                    'title': 'Goal Setting and Achievement Strategies',
-                    'url': 'https://en.wikipedia.org/wiki/Goal_setting',
-                    'source': 'Wikipedia'
-                })
-    
-    # Keyword-based recommendations
-    if keywords:
-        top_keyword = keywords[0] if keywords else 'general'
-        recommendations.append({
-            'title': f'Advanced {top_keyword.title()} Techniques and Applications',
-            'url': f'https://en.wikipedia.org/wiki/{top_keyword.replace(" ", "_")}',
-            'source': 'Wikipedia'
-        })
-    
-    return recommendations[:3]  # Return max 3 recommendations
 
 def extract_sentences(text):
     """
@@ -163,6 +55,137 @@ def extract_sentences(text):
         sentences = [text]
     
     return sentences
+
+def identify_key_sentences_gemini(sentences, text, visual_analysis=None):
+    """
+    Use Gemini AI to identify key sentences with intelligent analysis
+    """
+    if not sentences:
+        return []
+    
+    try:
+        # Create visual context for Gemini
+        visual_context = ""
+        if visual_analysis:
+            visual_context = f"""
+        
+        Visual Context:
+        - Content Type: {visual_analysis.get('content_type', 'unknown')}
+        - Objects: {', '.join([obj['name'] for obj in visual_analysis.get('objects', [])[:3]])}
+        - Themes: {', '.join([label['description'] for label in visual_analysis.get('labels', [])[:3]])}
+        - Mood: {visual_analysis.get('mood', 'neutral')}
+        """
+        
+        prompt = f"""
+        Analyze the following text and identify the 3 most important sentences that capture the key insights, main points, or critical information.
+        
+        Text: "{text}"
+        {visual_context}
+        
+        Available sentences:
+        {chr(10).join([f"{i+1}. {sentence}" for i, sentence in enumerate(sentences)])}
+        
+        Please identify the 3 most important sentences by their numbers and explain why each is significant. Consider:
+        - Main ideas and key concepts
+        - Actionable insights
+        - Critical information
+        - Strategic importance
+        - Visual context relevance
+        
+        Format your response as:
+        Key Sentence 1: [number] - [brief explanation]
+        Key Sentence 2: [number] - [brief explanation]  
+        Key Sentence 3: [number] - [brief explanation]
+        """
+        
+        response = gemini_model.generate_content(prompt)
+        
+        # Parse the response to extract sentence numbers
+        key_sentences = []
+        lines = response.text.split('\n')
+        
+        for line in lines:
+            if 'Key Sentence' in line and ':' in line:
+                try:
+                    # Extract sentence number
+                    parts = line.split(':')
+                    if len(parts) >= 2:
+                        number_part = parts[1].split('-')[0].strip()
+                        sentence_num = int(number_part) - 1  # Convert to 0-based index
+                        if 0 <= sentence_num < len(sentences):
+                            key_sentences.append(sentences[sentence_num])
+                except (ValueError, IndexError):
+                    continue
+        
+        # If Gemini parsing fails, return top 3 sentences
+        if not key_sentences:
+            return sentences[:3]
+        
+        return key_sentences[:3]
+        
+    except Exception as e:
+        print(f"Gemini key sentence analysis error: {str(e)}")
+        # Fallback to basic scoring
+        return identify_key_sentences_basic(sentences)
+
+def identify_key_sentences_basic(sentences):
+    """
+    Basic fallback method for identifying key sentences
+    """
+    if not sentences:
+        return []
+    
+    # Score sentences based on various factors
+    scored_sentences = []
+    
+    for sentence in sentences:
+        score = 0
+        sentence_lower = sentence.lower()
+        
+        # Length factor (longer sentences often contain more information)
+        if len(sentence.split()) > 5:
+            score += 1
+        
+        # Question sentences (often indicate important points)
+        if sentence.strip().endswith('?'):
+            score += 2
+        
+        # Action words
+        action_words = ['implement', 'create', 'develop', 'build', 'design', 'solve', 'improve', 'optimize', 'achieve', 'accomplish']
+        if any(word in sentence_lower for word in action_words):
+            score += 2
+        
+        # Problem/solution indicators
+        problem_words = ['problem', 'issue', 'challenge', 'difficulty', 'obstacle', 'barrier']
+        solution_words = ['solution', 'fix', 'resolve', 'improve', 'enhance', 'optimize']
+        
+        if any(word in sentence_lower for word in problem_words):
+            score += 2
+        if any(word in sentence_lower for word in solution_words):
+            score += 2
+        
+        # Goal/objective indicators
+        goal_words = ['goal', 'objective', 'target', 'aim', 'purpose', 'mission', 'vision']
+        if any(word in sentence_lower for word in goal_words):
+            score += 2
+        
+        # Technical terms (often important)
+        if any(char.isdigit() for char in sentence):  # Contains numbers
+            score += 1
+        
+        # Capitalized words (proper nouns, important concepts)
+        capitalized_words = [word for word in sentence.split() if word[0].isupper() and len(word) > 2]
+        score += len(capitalized_words) * 0.5
+        
+        scored_sentences.append((sentence, score))
+    
+    # Sort by score and return top sentences
+    scored_sentences.sort(key=lambda x: x[1], reverse=True)
+    
+    # Return top 3 sentences, but only if they have a score > 0
+    key_sentences = [sentence for sentence, score in scored_sentences[:3] if score > 0]
+    
+    return key_sentences
 
 def identify_key_sentences(sentences):
     """
@@ -340,13 +363,88 @@ def extract_visual_elements(objects_response, labels_response, faces_response,
     
     return visual_analysis
 
+def create_gemini_full_analysis(text, visual_analysis=None):
+    """
+    Use Gemini AI for complete analysis including all insights
+    """
+    print(f"Attempting Gemini full analysis for text: {text[:50]}...")
+    try:
+        # Create visual context for Gemini
+        visual_context = ""
+        if visual_analysis:
+            visual_context = f"""
+        
+        Visual Context:
+        - Content Type: {visual_analysis.get('content_type', 'unknown')}
+        - Objects Detected: {', '.join([obj['name'] for obj in visual_analysis.get('objects', [])[:5]])}
+        - Shapes: {', '.join(visual_analysis.get('shapes', []))}
+        - Key Themes: {', '.join([label['description'] for label in visual_analysis.get('labels', [])[:5]])}
+        - Mood: {visual_analysis.get('mood', 'neutral')}
+        - Visual Summary: {visual_analysis.get('visual_summary', 'No visual analysis available')}
+        """
+        
+        prompt = f"""
+        Analyze the following text and visual content to provide comprehensive insights:
+        
+        Text: "{text}"
+        {visual_context}
+        
+        Please provide a complete analysis including:
+        
+        1. **Key Themes & Patterns**: Identify main themes and underlying patterns
+        2. **Key Sentences**: Extract the 3 most important sentences that capture key insights
+        3. **Strategic Insights**: Provide strategic implications and business value
+        4. **Visual-Text Connections**: How visual elements relate to and enhance the text
+        5. **Actionable Recommendations**: Specific actions to take based on the analysis
+        6. **Potential Challenges**: Obstacles or challenges that might arise
+        7. **Opportunities**: Opportunities that can be leveraged
+        8. **Next Steps**: Most important next steps to take
+        
+        Format your response as a comprehensive analysis with clear sections and actionable insights.
+        """
+        
+        response = gemini_model.generate_content(prompt)
+        
+        # Extract sentences for key sentence analysis
+        sentences = extract_sentences(text)
+        key_sentences = identify_key_sentences_gemini(sentences, text, visual_analysis)
+        
+        # Create key sentences text
+        if key_sentences:
+            key_sentences_text = "\n".join([f"• \"{sentence}\"" for sentence in key_sentences[:3]])
+        else:
+            key_sentences_text = "• No key sentences identified"
+        
+        # Create the full analysis
+        enriched = f"""
+📝 **NoteIQ AI-Powered Analysis**
+
+{response.text}
+
+**📝 Key Sentences Identified:**
+{key_sentences_text}
+
+**🔧 Analysis Source:**
+- Powered by Google Gemini AI
+- Advanced natural language processing
+- Contextual understanding and strategic insights
+- Combined text and visual analysis
+        """
+        
+        return enriched
+        
+    except Exception as e:
+        print(f"Gemini full analysis error: {str(e)}")
+        # Fallback to enhanced analysis
+        return create_enhanced_analysis(text, visual_analysis)
+
 def create_enhanced_analysis(text, visual_analysis=None):
     """
     Create enhanced analysis when Gemini API is not available
     """
     # Extract sentences and analyze them
     sentences = extract_sentences(text)
-    key_sentences = identify_key_sentences(sentences)
+    key_sentences = identify_key_sentences_basic(sentences)
     
     words = text.split()
     word_count = len(words)
@@ -494,96 +592,10 @@ def enrich_text():
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    # Try Gemini API first, fallback to enhanced analysis
+    # Use Gemini for complete analysis
     try:
-        # Attempt to use Gemini API for intelligent analysis
-        try:
-            # Create visual context for the prompt
-            visual_context = ""
-            if visual_analysis:
-                visual_context = f"""
-
-Visual Analysis:
-- Content Type: {visual_analysis.get('content_type', 'unknown')}
-- Objects Detected: {', '.join([obj['name'] for obj in visual_analysis.get('objects', [])[:5]])}
-- Shapes: {', '.join(visual_analysis.get('shapes', []))}
-- Key Themes: {', '.join([label['description'] for label in visual_analysis.get('labels', [])[:5]])}
-- Mood: {visual_analysis.get('mood', 'neutral')}
-- Visual Summary: {visual_analysis.get('visual_summary', 'No visual analysis available')}
-"""
-            
-            prompt = f"""
-Analyze the following text and visual content to provide deep, actionable insights:
-
-Text: "{text}"
-{visual_context}
-
-Please provide:
-1. **Key Themes & Patterns**: What are the main themes and underlying patterns in both text and visuals?
-2. **Strategic Insights**: What strategic implications can you identify from the combined content?
-3. **Visual-Text Connections**: How do the visual elements relate to and enhance the text content?
-4. **Actionable Recommendations**: What specific actions should be taken based on both text and visual analysis?
-5. **Potential Challenges**: What obstacles or challenges might arise from the content?
-6. **Opportunities**: What opportunities can be leveraged from the visual and textual elements?
-7. **Next Steps**: What are the most important next steps to take?
-
-Format your response as a comprehensive analysis with clear sections and actionable insights that consider both textual and visual elements.
-"""
-
-            response = gemini_model.generate_content(prompt)
-            enriched = f"""
-📝 **NoteIQ AI-Powered Analysis**
-
-{response.text}
-
-**🔧 Analysis Source:**
-- Powered by Google Gemini AI
-- Advanced natural language processing
-- Contextual understanding and strategic insights
-            """
-            
-        except Exception as gemini_error:
-            print(f"Gemini API error: {str(gemini_error)}")
-            # Fallback to enhanced analysis with visual elements
-            enriched = create_enhanced_analysis(text, visual_analysis)
+        enriched = create_gemini_full_analysis(text, visual_analysis)
         
-        # Extract sentences and analyze them
-        sentences = extract_sentences(text)
-        key_sentences = identify_key_sentences(sentences)
-        
-        # Search for relevant articles
-        words = text.split()
-        common_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'a', 'an', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'}
-        keywords = [word.lower().strip('.,!?;:"()[]{}') for word in words if len(word) > 2 and word.lower().strip('.,!?;:"()[]{}') not in common_words]
-        unique_keywords = list(set(keywords))
-        
-        # Detect categories
-        categories = []
-        if any(word in text.lower() for word in ['problem', 'issue', 'challenge', 'difficulty', 'trouble']):
-            categories.append('Problem Identification')
-        if any(word in text.lower() for word in ['solution', 'fix', 'improve', 'better', 'optimize']):
-            categories.append('Solution Development')
-        if any(word in text.lower() for word in ['idea', 'concept', 'brainstorm', 'think', 'consider']):
-            categories.append('Ideation')
-        if any(word in text.lower() for word in ['action', 'do', 'implement', 'execute', 'start']):
-            categories.append('Action Items')
-        if any(word in text.lower() for word in ['goal', 'objective', 'target', 'aim', 'purpose']):
-            categories.append('Goal Setting')
-        
-        articles = search_relevant_articles(unique_keywords, categories, max_articles=3)
-        
-        # Add recommended reading section
-        if articles:
-            reading_section = f"""
-
-**📚 Recommended Reading:**
-{chr(10).join([f"• [{article['title']}]({article['url']})" for article in articles])}
-
-**💡 Reading Focus:**
-{'- Deep dive into ' + categories[0].lower() + ' strategies and best practices' if categories else '- Explore advanced techniques for your key concepts'}
-{'- Learn more about ' + ', '.join(unique_keywords[:2]) + ' implementation' if unique_keywords else '- Discover related methodologies and frameworks'}
-            """
-            enriched += reading_section
 
         return jsonify({
             "original_text": text,

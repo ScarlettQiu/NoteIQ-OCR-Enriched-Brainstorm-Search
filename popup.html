@@ -9,49 +9,147 @@
 <body>
     <div class="container">
         <header>
-            <h1>📝 NoteIQ</h1>
-            <p>OCR & AI Brainstorm Assistant</p>
+            <div class="header-content">
+                <div class="header-text">
+                    <div class="logo-section">
+                        <div class="logo-icon">📊</div>
+                        <div class="logo-text">
+                            <h1>NoteIQ Enterprise</h1>
+                            <p>Intelligent Document Analysis Platform</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="status-indicator" id="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Ready</span>
+                    </div>
+                    <button id="close-btn" class="close-btn" title="Close NoteIQ">✕</button>
+                </div>
+            </div>
         </header>
         
         <main>
             <div class="upload-section">
-                <label for="image-upload" class="upload-btn">
-                    📸 Upload Image
-                    <input type="file" id="image-upload" accept="image/*" hidden>
-                </label>
-                <div class="file-info">
-                    <small>📋 Supported formats: PNG, JPEG, JPG, GIF, BMP, WEBP</small>
-                    <small>❌ PDF files are not supported</small>
+                <div class="upload-card">
+                    <div class="upload-header">
+                        <h3>Document Analysis</h3>
+                        <p>Upload an image for intelligent text extraction and AI-powered analysis</p>
+                    </div>
+                    <label for="image-upload" class="upload-btn">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-text">
+                            <span class="upload-title">Choose Document</span>
+                            <span class="upload-subtitle">Click to browse or drag and drop</span>
+                        </div>
+                        <input type="file" id="image-upload" accept="image/*" hidden>
+                    </label>
+                    <div class="file-info">
+                        <div class="supported-formats">
+                            <span class="format-label">Supported formats:</span>
+                            <span class="formats">PNG, JPEG, JPG, GIF, BMP, WEBP</span>
+                        </div>
+                        <div class="file-restrictions">
+                            <span class="restriction">Maximum file size: 10MB</span>
+                            <span class="restriction">PDF files not supported</span>
+                        </div>
+                    </div>
+                    <div id="image-preview" class="image-preview"></div>
                 </div>
-                <div id="image-preview" class="image-preview"></div>
             </div>
             
             <div class="processing-section" id="processing-section" style="display: none;">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Processing with AI...</p>
+                <div class="processing-card">
+                    <div class="processing-header">
+                        <h3>AI Analysis in Progress</h3>
+                        <p>Our advanced AI is analyzing your document</p>
+                    </div>
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div class="loading-text">
+                            <p class="loading-title">Processing Document</p>
+                            <p class="loading-subtitle">Extracting text and generating insights...</p>
+                        </div>
+                    </div>
+                    <div class="processing-steps">
+                        <div class="step completed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">Document uploaded</span>
+                        </div>
+                        <div class="step active">
+                            <span class="step-icon">⟳</span>
+                            <span class="step-text">OCR processing</span>
+                        </div>
+                        <div class="step">
+                            <span class="step-icon">○</span>
+                            <span class="step-text">AI analysis</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <div class="results-section" id="results-section" style="display: none;">
-                <div class="result-card">
-                    <div class="result-header">
-                        <h3>📝 Extracted Text</h3>
-                        <button id="copy-text-btn" class="copy-btn" title="Copy to clipboard">
-                            📋 Copy
-                        </button>
+                <div class="analysis-header">
+                    <h2>Analysis Results</h2>
+                    <div class="analysis-meta">
+                        <span class="analysis-date" id="analysis-date"></span>
+                        <span class="analysis-status">✓ Analysis Complete</span>
                     </div>
-                    <div id="extracted-text" class="text-content"></div>
                 </div>
                 
                 <div class="result-card">
                     <div class="result-header">
-                        <h3>🧠 AI Insights</h3>
-                        <button id="copy-insights-btn" class="copy-btn" title="Copy to clipboard">
-                            📋 Copy
+                        <div class="result-title">
+                            <h3>🧠 AI-Powered Insights</h3>
+                            <p>Comprehensive analysis generated by our advanced AI engine</p>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="copy-insights-btn" class="action-btn copy" title="Copy to clipboard">
+                                <span class="btn-icon">📋</span>
+                                <span class="btn-text">Copy</span>
+                            </button>
+                        <button id="download-insights-pdf-btn" class="action-btn download" title="Download as PDF">
+                            <span class="btn-icon">📄</span>
+                            <span class="btn-text">PDF</span>
                         </button>
+                        <button id="download-insights-word-btn" class="action-btn download" title="Download as Word Document">
+                            <span class="btn-icon">📝</span>
+                            <span class="btn-text">Word</span>
+                        </button>
+                        </div>
                     </div>
                     <div id="ai-insights" class="text-content"></div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">
+                            <h3>📊 Executive Report</h3>
+                            <p>Professional document with complete analysis and insights</p>
+                        </div>
+                        <div class="action-buttons">
+                        <button id="download-complete-pdf-btn" class="action-btn primary" title="Download complete report as PDF">
+                            <span class="btn-icon">📄</span>
+                            <span class="btn-text">Executive PDF</span>
+                        </button>
+                        <button id="download-complete-word-btn" class="action-btn primary" title="Download complete report as Word Document">
+                            <span class="btn-icon">📝</span>
+                            <span class="btn-text">Executive Word</span>
+                        </button>
+                        </div>
+                    </div>
+                    <div class="report-preview">
+                        <div class="preview-content">
+                            <h4>Report Includes:</h4>
+                            <ul>
+                                <li>AI-powered insights and recommendations</li>
+                                <li>Strategic analysis and key findings</li>
+                                <li>Professional PDF formatting for business use</li>
+                                <li>Timestamped analysis with metadata</li>
+                                <li>Print-ready format with proper page breaks</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -63,7 +161,15 @@
         </main>
         
         <footer>
-            <p>Powered by Google Vision API & Gemini AI</p>
+            <div class="footer-content">
+                <div class="footer-left">
+                    <span class="footer-text">Powered by Google Vision API & Gemini AI</span>
+                </div>
+                <div class="footer-right">
+                    <span class="version">v2.1.0</span>
+                    <span class="enterprise-badge">Enterprise</span>
+                </div>
+            </div>
         </footer>
     </div>
     
